@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 enum OilType {
     БЕНЗИН,
@@ -30,47 +28,62 @@ interface Floatable {
     void floatOnWater();
 }
 
-abstract sealed class Vehicles permits Flying, GroundBased, WaterBased {
-    private String name;
+interface Action<T extends Vehicle> {
+    String getName();
+
+    void perform(T target);
+}
+
+interface Vehicle {
+    String getName();
+
+    void printInfo();
+
+    List<Action<? super Vehicle>> getActions();
+}
+
+abstract class AbstractVehicle implements Vehicle {
+    private final String name;
     private OilType oilType;
     private EngineType engineType;
     private Integer maxSpeed;
 
-    public Vehicles(String name) {
-        this.name = name;
+    protected AbstractVehicle(String name) {
+        this.name = Objects.requireNonNull(name);
     }
 
+    @Override
     public String getName() {
         return name;
-    }
-
-    public void setOilType(OilType oilType) {
-        this.oilType = oilType;
     }
 
     public OilType getOilType() {
         return oilType;
     }
 
-    public void setEngineType(EngineType engineType) {
-        this.engineType = engineType;
+    public void setOilType(OilType oilType) {
+        this.oilType = oilType;
     }
 
     public EngineType getEngineType() {
         return engineType;
     }
 
-    public void setMaxSpeed(Integer maxSpeed) {
-        this.maxSpeed = maxSpeed;
+    public void setEngineType(EngineType engineType) {
+        this.engineType = engineType;
     }
 
     public Integer getMaxSpeed() {
         return maxSpeed;
     }
 
-    protected void printSpecificInfo() {
+    public void setMaxSpeed(Integer maxSpeed) {
+        this.maxSpeed = maxSpeed;
     }
 
+    protected abstract void printSpecificInfo();
+
+    @Override
     public void printInfo() {
         System.out.println("\nТип: " + getClass().getSimpleName());
         System.out.println("Название: " + name);
@@ -82,73 +95,25 @@ abstract sealed class Vehicles permits Flying, GroundBased, WaterBased {
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + "{" +
-                "name='" + name + '\'' +
-                (oilType != null ? ", oilType='" + oilType + '\'' : "") +
-                (engineType != null ? ", engineType='" + engineType + '\'' : "") +
-                (maxSpeed != null ? ", maxSpeed=" + maxSpeed : "") +
-                '}';
+    public List<Action<? super Vehicle>> getActions() {
+        return Collections.emptyList();
     }
 }
 
-abstract sealed class Flying extends Vehicles implements Flyable permits Plane, Helicopter {
 
-    public Flying(String name) {
-        super(name);
-    }
-}
-
-final class Plane extends Flying {
-    private int passengerCapacity;
-
-    public Plane(String name, int passengerCapacity) {
-        super(name);
-        this.passengerCapacity = passengerCapacity;
-    }
-
-    @Override
-    protected void printSpecificInfo() {
-        System.out.println("Вместимость пассажиров: " + passengerCapacity);
-    }
-
-    @Override
-    public void fly() {
-        System.out.println(getName() + " летит!");
-    }
-}
-
-final class Helicopter extends Flying {
-    private int blades;
-
-    public Helicopter(String name, int blades) {
-        super(name);
-        this.blades = blades;
-    }
-
-    @Override
-    protected void printSpecificInfo() {
-        System.out.println("Количество лопастей: " + blades);
-    }
-
-    @Override
-    public void fly() {
-        System.out.println(getName() + " поднимается в воздух!");
-    }
-}
-
-abstract sealed class GroundBased extends Vehicles implements Drivable permits Car, Bike, Bicycle, RailsBased {
-
-    public GroundBased(String name) {
-        super(name);
-    }
-}
-
-final class Car extends GroundBased {
+final class Car extends AbstractVehicle implements Drivable {
     private int doors;
 
     public Car(String name, int doors) {
         super(name);
+        this.doors = doors;
+    }
+
+    public int getDoors() {
+        return doors;
+    }
+
+    public void setDoors(int doors) {
         this.doors = doors;
     }
 
@@ -161,14 +126,36 @@ final class Car extends GroundBased {
     public void drive() {
         System.out.println(getName() + " едет по дороге!");
     }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Ехать";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Car.this.drive();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
 }
 
-final class Bike extends GroundBased {
-    private boolean hasElectricEngine;
+final class Bike extends AbstractVehicle implements Drivable {
+    private final boolean hasElectricEngine;
 
     public Bike(String name, boolean hasElectricEngine) {
         super(name);
         this.hasElectricEngine = hasElectricEngine;
+    }
+
+    public boolean isHasElectricEngine() {
+        return hasElectricEngine;
     }
 
     @Override
@@ -180,10 +167,28 @@ final class Bike extends GroundBased {
     public void drive() {
         System.out.println(getName() + " едет по дороге!");
     }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Ехать";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Bike.this.drive();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
 }
 
-final class Bicycle extends GroundBased {
-    private boolean hasGears;
+final class Bicycle extends AbstractVehicle implements Drivable {
+    private final boolean hasGears;
 
     public Bicycle(String name, boolean hasGears) {
         super(name);
@@ -199,17 +204,102 @@ final class Bicycle extends GroundBased {
     public void drive() {
         System.out.println(getName() + " едет по лесу!");
     }
-}
 
-abstract sealed class RailsBased extends GroundBased permits Train, Subway {
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Ехать";
+            }
 
-    public RailsBased(String name) {
-        super(name);
+            @Override
+            public void perform(Vehicle target) {
+                Bicycle.this.drive();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
     }
 }
 
-final class Train extends RailsBased {
-    private int wagons;
+final class Plane extends AbstractVehicle implements Flyable {
+    private final int passengerCapacity;
+
+    public Plane(String name, int passengerCapacity) {
+        super(name);
+        this.passengerCapacity = passengerCapacity;
+    }
+
+    @Override
+    protected void printSpecificInfo() {
+        System.out.println("Вместимость пассажиров: " + passengerCapacity);
+    }
+
+    @Override
+    public void fly() {
+        System.out.println(getName() + " летит!");
+    }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Летать";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Plane.this.fly();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
+}
+
+final class Helicopter extends AbstractVehicle implements Flyable {
+    private final int blades;
+
+    public Helicopter(String name, int blades) {
+        super(name);
+        this.blades = blades;
+    }
+
+    @Override
+    protected void printSpecificInfo() {
+        System.out.println("Количество лопастей: " + blades);
+    }
+
+    @Override
+    public void fly() {
+        System.out.println(getName() + " поднимается в воздух!");
+    }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Летать";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Helicopter.this.fly();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
+}
+
+final class Train extends AbstractVehicle implements Drivable {
+    private final int wagons;
 
     public Train(String name, int wagons) {
         super(name);
@@ -225,10 +315,28 @@ final class Train extends RailsBased {
     public void drive() {
         System.out.println(getName() + " едет по рельсам!");
     }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Ехать по рельсам";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Train.this.drive();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
 }
 
-final class Subway extends RailsBased {
-    private int stations;
+final class Subway extends AbstractVehicle implements Drivable {
+    private final int stations;
 
     public Subway(String name, int stations) {
         super(name);
@@ -244,17 +352,28 @@ final class Subway extends RailsBased {
     public void drive() {
         System.out.println(getName() + " едет по рельсам под землей!");
     }
-}
 
-abstract sealed class WaterBased extends Vehicles implements Floatable permits Boat, Ship {
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Ехать по рельсам (метро)";
+            }
 
-    public WaterBased(String name) {
-        super(name);
+            @Override
+            public void perform(Vehicle target) {
+                Subway.this.drive();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
     }
 }
 
-final class Boat extends WaterBased {
-    private double displacement;
+final class Boat extends AbstractVehicle implements Floatable {
+    private final double displacement;
 
     public Boat(String name, double displacement) {
         super(name);
@@ -270,10 +389,28 @@ final class Boat extends WaterBased {
     public void floatOnWater() {
         System.out.println(getName() + " рассекает волны!");
     }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Плыть";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Boat.this.floatOnWater();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
 }
 
-final class Ship extends WaterBased {
-    private double tonnage;
+final class Ship extends AbstractVehicle implements Floatable {
+    private final double tonnage;
 
     public Ship(String name, double tonnage) {
         super(name);
@@ -289,194 +426,306 @@ final class Ship extends WaterBased {
     public void floatOnWater() {
         System.out.println(getName() + " плывет по воде!");
     }
+
+    @Override
+    public List<Action<? super Vehicle>> getActions() {
+        List<Action<? super Vehicle>> actions = new ArrayList<>();
+        actions.add(new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Плыть";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                Ship.this.floatOnWater();
+            }
+        });
+        actions.add(CommonActions.printInfoAction(this));
+        return actions;
+    }
+}
+
+final class CommonActions {
+    private CommonActions() {
+    }
+
+    static Action<? super Vehicle> printInfoAction(Vehicle who) {
+        return new Action<Vehicle>() {
+            @Override
+            public String getName() {
+                return "Показать информацию";
+            }
+
+            @Override
+            public void perform(Vehicle target) {
+                who.printInfo();
+            }
+        };
+    }
+}
+
+@FunctionalInterface
+interface VehicleBuilder {
+    Vehicle build(ConsoleUI console);
+}
+
+final class VehicleFactory {
+    private static final Map<Integer, RegisteredType> registry = new LinkedHashMap<>();
+    private static int nextId = 1;
+
+    private VehicleFactory() {
+    }
+
+    static void register(String displayName, VehicleBuilder builder) {
+        registry.put(nextId++, new RegisteredType(displayName, builder));
+    }
+
+    static Map<Integer, RegisteredType> getRegistry() {
+        return Collections.unmodifiableMap(registry);
+    }
+
+    static Vehicle createById(int id, ConsoleUI console) {
+        RegisteredType rt = registry.get(id);
+        if (rt == null) throw new IllegalArgumentException("Неизвестный тип транспорта: " + id);
+        return rt.builder.build(console);
+    }
+
+    record RegisteredType(String displayName, VehicleBuilder builder) {
+    }
+}
+
+final class ConsoleUI {
+    private final Scanner scanner;
+
+    ConsoleUI() {
+        scanner = new Scanner(System.in);
+    }
+
+    int readInt(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String line = scanner.nextLine().trim();
+                return Integer.parseInt(line);
+            } catch (NumberFormatException e) {
+                System.out.println("Пожалуйста, введите целое число.");
+            }
+        }
+    }
+
+    double readDouble(String prompt) {
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String line = scanner.nextLine().trim();
+                return Double.parseDouble(line);
+            } catch (NumberFormatException e) {
+                System.out.println("Пожалуйста, введите число (например, 12.5).");
+            }
+        }
+    }
+
+    boolean readBoolean(String prompt) {
+        while (true) {
+            System.out.print(prompt + " (y/n): ");
+            String line = scanner.nextLine().trim().toLowerCase();
+            if (line.equals("y") || line.equals("yes")) return true;
+            if (line.equals("n") || line.equals("no")) return false;
+            System.out.println("Пожалуйста, ответьте y или n.");
+        }
+    }
+
+    String readString(String prompt) {
+        System.out.print(prompt);
+        return scanner.nextLine().trim();
+    }
+
+    <T extends Enum<T>> T chooseEnum(String prompt, Class<T> enumClass) {
+        T[] vals = enumClass.getEnumConstants();
+        while (true) {
+            System.out.println(prompt);
+            for (int i = 0; i < vals.length; i++) {
+                System.out.printf("%d. %s%n", i + 1, vals[i]);
+            }
+            int choice = readInt("Введите номер: ");
+            if (choice >= 1 && choice <= vals.length) return vals[choice - 1];
+            System.out.println("Неверный выбор, повторите.");
+        }
+    }
+
+    void pause() {
+        System.out.println("Нажмите Enter для продолжения...");
+        scanner.nextLine();
+    }
+
+    void printLine(String s) {
+        System.out.println(s);
+    }
 }
 
 public class Main {
-    private static final List<Vehicles> vehicles = new ArrayList<>();
-    private static final Scanner scanner = new Scanner(System.in);
-
-    private static boolean checkIsEmptyList() {
-        if (vehicles.isEmpty()) {
-            System.out.println("\nСписок пуст.");
-            return true;
-        }
-        return false;
-    }
+    private final ConsoleUI console = new ConsoleUI();
+    private final List<Vehicle> vehicles = new ArrayList<>();
 
     public static void main(String[] args) {
+        Main app = new Main();
+        app.registerTypes();
+        app.runMainLoop();
+    }
+
+    private void registerTypes() {
+        VehicleFactory.register("Машина", (c) -> {
+            String name = c.readString("Введите название машины: ");
+            int doors = c.readInt("Количество дверей: ");
+            Car car = new Car(name, doors);
+            applyCommonParams(car, c);
+            return car;
+        });
+
+        VehicleFactory.register("Самолёт", (c) -> {
+            String name = c.readString("Введите название самолёта: ");
+            int capacity = c.readInt("Количество посадочных мест: ");
+            Plane plane = new Plane(name, capacity);
+            applyCommonParams(plane, c);
+            return plane;
+        });
+
+        VehicleFactory.register("Мотоцикл", (c) -> {
+            String name = c.readString("Введите название мотоцикла: ");
+            boolean electro = c.readBoolean("Есть ли электродвигатель?");
+            Bike bike = new Bike(name, electro);
+            applyCommonParams(bike, c);
+            return bike;
+        });
+
+        VehicleFactory.register("Велосипед", (c) -> {
+            String name = c.readString("Введите название велосипеда: ");
+            boolean gears = c.readBoolean("Есть ли переключатель передач?");
+            Bicycle bicycle = new Bicycle(name, gears);
+            applyCommonParams(bicycle, c);
+            return bicycle;
+        });
+
+        VehicleFactory.register("Поезд", (c) -> {
+            String name = c.readString("Введите название поезда: ");
+            int wagons = c.readInt("Количество вагонов: ");
+            Train train = new Train(name, wagons);
+            applyCommonParams(train, c);
+            return train;
+        });
+
+        VehicleFactory.register("Метро", (c) -> {
+            String name = c.readString("Введите название метро: ");
+            int stations = c.readInt("Количество станций: ");
+            Subway subway = new Subway(name, stations);
+            applyCommonParams(subway, c);
+            return subway;
+        });
+
+        VehicleFactory.register("Лодка", (c) -> {
+            String name = c.readString("Введите название лодки: ");
+            double displacement = c.readDouble("Водоизмещение (т): ");
+            Boat boat = new Boat(name, displacement);
+            applyCommonParams(boat, c);
+            return boat;
+        });
+
+        VehicleFactory.register("Корабль", (c) -> {
+            String name = c.readString("Введите название корабля: ");
+            double tonnage = c.readDouble("Масса (т): ");
+            Ship ship = new Ship(name, tonnage);
+            applyCommonParams(ship, c);
+            return ship;
+        });
+    }
+
+    private static void applyCommonParams(AbstractVehicle v, ConsoleUI c) {
+        EngineType et = c.chooseEnum("Выберите тип двигателя:", EngineType.class);
+        v.setEngineType(et);
+        OilType ot = c.chooseEnum("Выберите тип топлива:", OilType.class);
+        v.setOilType(ot);
+        int speed = c.readInt("Введите макс. скорость (км/ч, 0 чтобы пропустить): ");
+        if (speed > 0) v.setMaxSpeed(speed);
+    }
+
+    private void runMainLoop() {
         while (true) {
-            System.out.println("\n===== Меню =====");
-            System.out.println("1. Добавить транспорт");
-            System.out.println("2. Показать все созданные транспорты");
-            System.out.println("3. Выполнить действие с транспортом");
-            System.out.println("4. Выход");
-            System.out.print("Выберите пункт: ");
-
-            int variant = scanner.nextInt();
-            scanner.nextLine();
-
-            switch (variant) {
+            console.printLine("\n===== Меню =====");
+            console.printLine("1. Добавить транспорт");
+            console.printLine("2. Показать все созданные транспорты");
+            console.printLine("3. Выполнить действие с транспортом");
+            console.printLine("4. Выход");
+            int choice = console.readInt("Выберите пункт: ");
+            switch (choice) {
                 case 1 -> addVehicle();
                 case 2 -> showVehicles();
-                case 3 -> doAction();
+                case 3 -> performActionOnVehicle();
                 case 4 -> {
-                    System.out.println("Выход из программы...");
+                    console.printLine("Выход из программы...");
                     return;
                 }
-                default -> System.out.println("Неизвестный вариант выбора, попробуйте еще раз.");
+                default -> console.printLine("Неизвестный вариант, повторите.");
             }
         }
     }
 
-    private static OilType chooseOilType() {
-        System.out.println("Выберите тип топлива:");
-        OilType[] values = OilType.values();
-        for (int i = 0; i < values.length; i++) {
-            System.out.println((i + 1) + ". " + values[i]);
-        }
-        int oilVariant = scanner.nextInt();
-        scanner.nextLine();
-        if (oilVariant >= 1 && oilVariant <= values.length) {
-            return values[oilVariant - 1];
-        } else {
-            System.out.println("Неверный ввод, выбрано НЕТ");
-            return OilType.НЕТ;
-        }
-    }
-
-    private static EngineType chooseEngineType() {
-        System.out.println("Выберите тип двигателя:");
-        EngineType[] values = EngineType.values();
-        for (int i = 0; i < values.length; i++) {
-            System.out.println((i + 1) + ". " + values[i]);
-        }
-        int engineVariant = scanner.nextInt();
-        scanner.nextLine();
-        if (engineVariant >= 1 && engineVariant <= values.length) {
-            return values[engineVariant - 1];
-        } else {
-            System.out.println("Неверный ввод, выбрано НЕТ");
-            return EngineType.НЕТ;
+    private void addVehicle() {
+        console.printLine("\nКакой транспорт добавить?");
+        VehicleFactory.getRegistry().forEach((id, reg) -> {
+            console.printLine(id + ". " + reg.displayName());
+        });
+        int id = console.readInt("Введите номер: ");
+        try {
+            Vehicle v = VehicleFactory.createById(id, console);
+            vehicles.add(v);
+            console.printLine("Транспорт добавлен: " + v.getName());
+        } catch (Exception e) {
+            console.printLine("Ошибка при создании транспорта: " + e.getMessage());
         }
     }
 
-
-    private static void addVehicle() {
-        System.out.println("\nКакой транспорт добавить?");
-        System.out.println("1. Машина");
-        System.out.println("2. Самолет");
-        System.out.println("3. Мотоцикл");
-        System.out.println("4. Велосипед");
-        System.out.println("5. Поезд");
-        System.out.println("6. Метро");
-        System.out.println("7. Лодка");
-        System.out.println("8. Корабль");
-        System.out.print("Введите номер: ");
-        int type = scanner.nextInt();
-        scanner.nextLine();
-
-        System.out.print("Введите название: ");
-        String name = scanner.nextLine();
-
-        Vehicles vehicle = null;
-
-        switch (type) {
-            case 1 -> {
-                System.out.print("Количество дверей: ");
-                int doors = scanner.nextInt();
-                vehicle = new Car(name, doors);
-            }
-            case 2 -> {
-                System.out.print("Количество посадочных мест: ");
-                int capacity = scanner.nextInt();
-                vehicle = new Plane(name, capacity);
-            }
-            case 3 -> {
-                System.out.print("Есть ли электродвигатель? (true/false): ");
-                boolean electroEngine = scanner.nextBoolean();
-                vehicle = new Bike(name, electroEngine);
-            }
-            case 4 -> {
-                System.out.print("Есть ли переключатель передач? (true/false): ");
-                boolean shifter = scanner.nextBoolean();
-                vehicle = new Bicycle(name, shifter);
-            }
-            case 5 -> {
-                System.out.print("Количество вагонов: ");
-                int wagons = scanner.nextInt();
-                vehicle = new Train(name, wagons);
-            }
-            case 6 -> {
-                System.out.print("Количество станций: ");
-                int stations = scanner.nextInt();
-                vehicle = new Subway(name, stations);
-            }
-            case 7 -> {
-                System.out.print("Водоизмещение: ");
-                double d = scanner.nextDouble();
-                vehicle = new Boat(name, d);
-            }
-            case 8 -> {
-                System.out.print("Масса: ");
-                double mass = scanner.nextDouble();
-                vehicle = new Ship(name, mass);
-            }
-            default -> System.out.println("Неизвестный тип транспорта.");
-        }
-
-        if (vehicle != null) {
-            scanner.nextLine();
-            vehicle.setEngineType(chooseEngineType());
-            vehicle.setOilType(chooseOilType());
-
-            System.out.print("Введите макс. скорость: ");
-            int speed = scanner.nextInt();
-            if (speed > 0) vehicle.setMaxSpeed(speed);
-
-            vehicles.add(vehicle);
-            System.out.println("Транспорт добавлен!");
-        }
-    }
-
-    private static void showVehicles() {
-        if (checkIsEmptyList()) return;
-        System.out.println("\n===== Список созданного транспорта =====");
-        System.out.println("\nВсего транспорта в списке " + vehicles.size());
-        System.out.println("\n----------------------------");
-        for (Vehicles v : vehicles) {
-            v.printInfo();
-        }
-    }
-
-    private static void doAction() {
-        if (checkIsEmptyList()) return;
-
-        System.out.println("\nВыберите транспорт для действия:");
-        for (int i = 0; i < vehicles.size(); i++) {
-            System.out.println((i + 1) + ". " + vehicles.get(i).getName() + " (" + vehicles.get(i).getClass().getSimpleName() + ")");
-        }
-
-        int index = scanner.nextInt() - 1;
-        scanner.nextLine();
-        if (index < 0 || index >= vehicles.size()) {
-            System.out.println("Неверный выбор.");
+    private void showVehicles() {
+        if (vehicles.isEmpty()) {
+            console.printLine("\nСписок пуст.");
             return;
         }
-
-        Vehicles v = vehicles.get(index);
-
-        System.out.println("\nВыберите действие:");
-        if (v instanceof Flyable) System.out.println("1. Летать");
-        if (v instanceof Drivable) System.out.println("2. Ехать");
-        if (v instanceof Floatable) System.out.println("3. Плыть");
-
-        int action = scanner.nextInt();
-        scanner.nextLine();
-
-        if (v instanceof Flyable f && action == 1) f.fly();
-        else if (v instanceof Drivable d && action == 2) d.drive();
-        else if (v instanceof Floatable fl && action == 3) fl.floatOnWater();
-        else System.out.println("Неверное действие для выбранного транспорта.");
+        console.printLine("\n===== Список созданного транспорта =====");
+        console.printLine("Всего: " + vehicles.size());
+        vehicles.forEach(Vehicle::printInfo);
     }
 
+    private void performActionOnVehicle() {
+        if (vehicles.isEmpty()) {
+            console.printLine("\nСписок пуст.");
+            return;
+        }
+        console.printLine("\nВыберите транспорт для действия:");
+        for (int i = 0; i < vehicles.size(); i++) {
+            Vehicle v = vehicles.get(i);
+            console.printLine((i + 1) + ". " + v.getName() + " (" + v.getClass().getSimpleName() + ")");
+        }
+        int idx = console.readInt("Введите номер: ") - 1;
+        if (idx < 0 || idx >= vehicles.size()) {
+            console.printLine("Неверный выбор.");
+            return;
+        }
+        Vehicle v = vehicles.get(idx);
+        List<Action<? super Vehicle>> actions = v.getActions();
+        if (actions.isEmpty()) {
+            console.printLine("Доступных действий нет.");
+            return;
+        }
+        console.printLine("\nДоступные действия:");
+        for (int i = 0; i < actions.size(); i++) {
+            console.printLine((i + 1) + ". " + actions.get(i).getName());
+        }
+        int actIdx = console.readInt("Выберите действие: ") - 1;
+        if (actIdx < 0 || actIdx >= actions.size()) {
+            console.printLine("Неверный выбор действия.");
+            return;
+        }
+        Action<? super Vehicle> action = actions.get(actIdx);
+        action.perform(v);
+    }
 }
