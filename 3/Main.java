@@ -85,13 +85,17 @@ abstract class AbstractVehicle implements Vehicle {
 
     @Override
     public void printInfo() {
-        System.out.println("\nТип: " + getClass().getSimpleName());
-        System.out.println("Название: " + name);
-        if (engineType != null) System.out.println("Двигатель: " + engineType);
-        if (oilType != null) System.out.println("Тип топлива: " + oilType);
-        if (maxSpeed != null) System.out.println("Макс. скорость: " + maxSpeed + " км/ч");
-        printSpecificInfo();
-        System.out.println("----------------------------");
+        try {
+            System.out.println("\nТип: " + getClass().getSimpleName());
+            System.out.println("Название: " + name);
+            if (engineType != null) System.out.println("Двигатель: " + engineType);
+            if (oilType != null) System.out.println("Тип топлива: " + oilType);
+            if (maxSpeed != null) System.out.println("Макс. скорость: " + maxSpeed + " км/ч");
+            printSpecificInfo();
+            System.out.println("----------------------------");
+        } catch (Exception e) {
+            System.out.println("Ошибка при выводе информации об объекте: " + e.getMessage());
+        }
     }
 
     @Override
@@ -138,7 +142,11 @@ final class Car extends AbstractVehicle implements Drivable {
 
             @Override
             public void perform(Vehicle target) {
-                Car.this.drive();
+                try {
+                    Car.this.drive();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -179,7 +187,11 @@ final class Bike extends AbstractVehicle implements Drivable {
 
             @Override
             public void perform(Vehicle target) {
-                Bike.this.drive();
+                try {
+                    Bike.this.drive();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -216,7 +228,11 @@ final class Bicycle extends AbstractVehicle implements Drivable {
 
             @Override
             public void perform(Vehicle target) {
-                Bicycle.this.drive();
+                try {
+                    Bicycle.this.drive();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -253,7 +269,11 @@ final class Plane extends AbstractVehicle implements Flyable {
 
             @Override
             public void perform(Vehicle target) {
-                Plane.this.fly();
+                try {
+                    Plane.this.fly();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -290,7 +310,11 @@ final class Helicopter extends AbstractVehicle implements Flyable {
 
             @Override
             public void perform(Vehicle target) {
-                Helicopter.this.fly();
+                try {
+                    Helicopter.this.fly();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -327,7 +351,11 @@ final class Train extends AbstractVehicle implements Drivable {
 
             @Override
             public void perform(Vehicle target) {
-                Train.this.drive();
+                try {
+                    Train.this.drive();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -364,7 +392,11 @@ final class Subway extends AbstractVehicle implements Drivable {
 
             @Override
             public void perform(Vehicle target) {
-                Subway.this.drive();
+                try {
+                    Subway.this.drive();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -401,7 +433,11 @@ final class Boat extends AbstractVehicle implements Floatable {
 
             @Override
             public void perform(Vehicle target) {
-                Boat.this.floatOnWater();
+                try {
+                    Boat.this.floatOnWater();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -438,7 +474,11 @@ final class Ship extends AbstractVehicle implements Floatable {
 
             @Override
             public void perform(Vehicle target) {
-                Ship.this.floatOnWater();
+                try {
+                    Ship.this.floatOnWater();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выполнении действия: " + e.getMessage());
+                }
             }
         });
         actions.add(CommonActions.printInfoAction(this));
@@ -459,7 +499,11 @@ final class CommonActions {
 
             @Override
             public void perform(Vehicle target) {
-                who.printInfo();
+                try {
+                    who.printInfo();
+                } catch (Exception e) {
+                    System.out.println("Ошибка при выводе информации: " + e.getMessage());
+                }
             }
         };
     }
@@ -467,7 +511,7 @@ final class CommonActions {
 
 @FunctionalInterface
 interface VehicleBuilder {
-    Vehicle build(ConsoleUI console);
+    Vehicle build(ConsoleUI console) throws Exception;
 }
 
 final class VehicleFactory {
@@ -487,8 +531,16 @@ final class VehicleFactory {
 
     static Vehicle createById(int id, ConsoleUI console) {
         RegisteredType rt = registry.get(id);
-        if (rt == null) throw new IllegalArgumentException("Неизвестный тип транспорта: " + id);
-        return rt.builder.build(console);
+        if (rt == null) {
+            console.printLine("Неизвестный тип транспорта: " + id);
+            return null;
+        }
+        try {
+            return rt.builder.build(console);
+        } catch (Exception e) {
+            console.printLine("Ошибка при создании транспорта: " + e.getMessage());
+            return null;
+        }
     }
 
     record RegisteredType(String displayName, VehicleBuilder builder) {
@@ -506,10 +558,20 @@ final class ConsoleUI {
         while (true) {
             try {
                 System.out.print(prompt);
-                String line = scanner.nextLine().trim();
+                String line = scanner.nextLine();
+                if (line == null) {
+                    System.out.println("\nВвод завершён. Выход.");
+                    System.exit(0);
+                }
+                line = line.trim();
                 return Integer.parseInt(line);
             } catch (NumberFormatException e) {
                 System.out.println("Пожалуйста, введите целое число.");
+            } catch (NoSuchElementException | IllegalStateException e) {
+                System.out.println("\nВвод завершён или недоступен. Выход.");
+                System.exit(0);
+            } catch (Exception e) {
+                System.out.println("Неожиданная ошибка при вводе числа: " + e.getMessage());
             }
         }
     }
@@ -518,51 +580,96 @@ final class ConsoleUI {
         while (true) {
             try {
                 System.out.print(prompt);
-                String line = scanner.nextLine().trim();
+                String line = scanner.nextLine();
+                if (line == null) {
+                    System.out.println("\nВвод завершён. Выход.");
+                    System.exit(0);
+                }
+                line = line.trim();
                 return Double.parseDouble(line);
             } catch (NumberFormatException e) {
                 System.out.println("Пожалуйста, введите число (например, 12.5).");
+            } catch (NoSuchElementException | IllegalStateException e) {
+                System.out.println("\nВвод завершён или недоступен. Выход.");
+                System.exit(0);
+            } catch (Exception e) {
+                System.out.println("Неожиданная ошибка при вводе числа: " + e.getMessage());
             }
         }
     }
 
     boolean readBoolean(String prompt) {
         while (true) {
-            System.out.print(prompt + " (y/n): ");
-            String line = scanner.nextLine().trim().toLowerCase();
-            if (line.equals("y") || line.equals("yes")) return true;
-            if (line.equals("n") || line.equals("no")) return false;
-            System.out.println("Пожалуйста, ответьте y или n.");
+            try {
+                System.out.print(prompt + " (y/n): ");
+                String line = scanner.nextLine();
+                if (line == null) {
+                    System.out.println("\nВвод завершён. Выход.");
+                    System.exit(0);
+                }
+                line = line.trim().toLowerCase();
+                if (line.equals("y") || line.equals("yes")) return true;
+                if (line.equals("n") || line.equals("no")) return false;
+                System.out.println("Пожалуйста, ответьте y или n.");
+            } catch (NoSuchElementException | IllegalStateException e) {
+                System.out.println("\nВвод завершён или недоступен. Выход.");
+                System.exit(0);
+            } catch (Exception e) {
+                System.out.println("Неожиданная ошибка при вводе: " + e.getMessage());
+            }
         }
     }
 
     String readString(String prompt) {
-        System.out.print(prompt);
-        return scanner.nextLine().trim();
+        while (true) {
+            try {
+                System.out.print(prompt);
+                String line = scanner.nextLine();
+                if (line == null) {
+                    System.out.println("\nВвод завершён. Выход.");
+                    System.exit(0);
+                }
+                return line.trim();
+            } catch (NoSuchElementException | IllegalStateException e) {
+                System.out.println("\nВвод завершён или недоступен. Выход.");
+                System.exit(0);
+            } catch (Exception e) {
+                System.out.println("Неожиданная ошибка при вводе текста: " + e.getMessage());
+            }
+        }
     }
 
     <T extends Enum<T>> T chooseEnum(String prompt, Class<T> enumClass) {
         T[] vals = enumClass.getEnumConstants();
         while (true) {
-            System.out.println(prompt);
-            for (int i = 0; i < vals.length; i++) {
-                System.out.printf("%d. %s%n", i + 1, vals[i]);
+            try {
+                System.out.println(prompt);
+                for (int i = 0; i < vals.length; i++) {
+                    System.out.printf("%d. %s%n", i + 1, vals[i]);
+                }
+                int choice = readInt("Введите номер: ");
+                if (choice >= 1 && choice <= vals.length) return vals[choice - 1];
+                System.out.println("Неверный выбор, повторите.");
+            } catch (Exception e) {
+                System.out.println("Ошибка при выборе: " + e.getMessage());
             }
-            int choice = readInt("Введите номер: ");
-            if (choice >= 1 && choice <= vals.length) return vals[choice - 1];
-            System.out.println("Неверный выбор, повторите.");
         }
     }
 
     void pause() {
         System.out.println("Нажмите Enter для продолжения...");
-        scanner.nextLine();
+        try {
+            scanner.nextLine();
+        } catch (Exception _) {
+
+        }
     }
 
     void printLine(String s) {
         System.out.println(s);
     }
 }
+
 
 public class Main {
     private final ConsoleUI console = new ConsoleUI();
@@ -578,6 +685,7 @@ public class Main {
         VehicleFactory.register("Машина", (c) -> {
             String name = c.readString("Введите название машины: ");
             int doors = c.readInt("Количество дверей: ");
+            if (doors < 0) throw new IllegalArgumentException("Количество дверей не может быть отрицательным.");
             Car car = new Car(name, doors);
             applyCommonParams(car, c);
             return car;
@@ -586,6 +694,8 @@ public class Main {
         VehicleFactory.register("Самолёт", (c) -> {
             String name = c.readString("Введите название самолёта: ");
             int capacity = c.readInt("Количество посадочных мест: ");
+            if (capacity < 0)
+                throw new IllegalArgumentException("Количество посадочных мест не может быть отрицательным.");
             Plane plane = new Plane(name, capacity);
             applyCommonParams(plane, c);
             return plane;
@@ -610,6 +720,7 @@ public class Main {
         VehicleFactory.register("Поезд", (c) -> {
             String name = c.readString("Введите название поезда: ");
             int wagons = c.readInt("Количество вагонов: ");
+            if (wagons < 0) throw new IllegalArgumentException("Количество вагонов не может быть отрицательным.");
             Train train = new Train(name, wagons);
             applyCommonParams(train, c);
             return train;
@@ -618,6 +729,7 @@ public class Main {
         VehicleFactory.register("Метро", (c) -> {
             String name = c.readString("Введите название метро: ");
             int stations = c.readInt("Количество станций: ");
+            if (stations < 0) throw new IllegalArgumentException("Количество станций не может быть отрицательным.");
             Subway subway = new Subway(name, stations);
             applyCommonParams(subway, c);
             return subway;
@@ -626,6 +738,7 @@ public class Main {
         VehicleFactory.register("Лодка", (c) -> {
             String name = c.readString("Введите название лодки: ");
             double displacement = c.readDouble("Водоизмещение (т): ");
+            if (displacement < 0) throw new IllegalArgumentException("Водоизмещение не может быть отрицательным.");
             Boat boat = new Boat(name, displacement);
             applyCommonParams(boat, c);
             return boat;
@@ -634,6 +747,7 @@ public class Main {
         VehicleFactory.register("Корабль", (c) -> {
             String name = c.readString("Введите название корабля: ");
             double tonnage = c.readDouble("Масса (т): ");
+            if (tonnage < 0) throw new IllegalArgumentException("Масса корабля не может быть отрицательной.");
             Ship ship = new Ship(name, tonnage);
             applyCommonParams(ship, c);
             return ship;
@@ -651,21 +765,25 @@ public class Main {
 
     private void runMainLoop() {
         while (true) {
-            console.printLine("\n===== Меню =====");
-            console.printLine("1. Добавить транспорт");
-            console.printLine("2. Показать все созданные транспорты");
-            console.printLine("3. Выполнить действие с транспортом");
-            console.printLine("4. Выход");
-            int choice = console.readInt("Выберите пункт: ");
-            switch (choice) {
-                case 1 -> addVehicle();
-                case 2 -> showVehicles();
-                case 3 -> performActionOnVehicle();
-                case 4 -> {
-                    console.printLine("Выход из программы...");
-                    return;
+            try {
+                console.printLine("\n===== Меню =====");
+                console.printLine("1. Добавить транспорт");
+                console.printLine("2. Показать все созданные транспорты");
+                console.printLine("3. Выполнить действие с транспортом");
+                console.printLine("4. Выход");
+                int choice = console.readInt("Выберите пункт: ");
+                switch (choice) {
+                    case 1 -> addVehicle();
+                    case 2 -> showVehicles();
+                    case 3 -> performActionOnVehicle();
+                    case 4 -> {
+                        console.printLine("Выход из программы...");
+                        return;
+                    }
+                    default -> console.printLine("Неизвестный вариант, повторите.");
                 }
-                default -> console.printLine("Неизвестный вариант, повторите.");
+            } catch (Exception e) {
+                System.out.println("Непредвиденная ошибка: " + e.getMessage());
             }
         }
     }
@@ -675,13 +793,33 @@ public class Main {
         VehicleFactory.getRegistry().forEach((id, reg) -> {
             console.printLine(id + ". " + reg.displayName());
         });
-        int id = console.readInt("Введите номер: ");
-        try {
-            Vehicle v = VehicleFactory.createById(id, console);
-            vehicles.add(v);
-            console.printLine("Транспорт добавлен: " + v.getName());
-        } catch (Exception e) {
-            console.printLine("Ошибка при создании транспорта: " + e.getMessage());
+
+        while (true) {
+            int id = console.readInt("Введите номер (0 — отмена): ");
+            if (id == 0) {
+                console.printLine("Добавление отменено.");
+                return;
+            }
+            try {
+                Vehicle v = VehicleFactory.createById(id, console);
+                if (v != null) {
+                    vehicles.add(v);
+                    console.printLine("Транспорт добавлен: " + v.getName());
+                    return;
+                } else {
+                    boolean retry = console.readBoolean("Добавление завершилось ошибкой. Повторить выбор типа транспорта?");
+                    if (!retry) {
+                        console.printLine("Добавление отменено.");
+                        return;
+                    } else {
+                        console.printLine("\nПопробуйте снова.");
+                    }
+                }
+            } catch (Exception e) {
+                console.printLine("Ошибка при создании транспорта: " + e.getMessage());
+                boolean retry = console.readBoolean("Повторить ввод?");
+                if (!retry) return;
+            }
         }
     }
 
@@ -692,7 +830,13 @@ public class Main {
         }
         console.printLine("\n===== Список созданного транспорта =====");
         console.printLine("Всего: " + vehicles.size());
-        vehicles.forEach(Vehicle::printInfo);
+        for (Vehicle v : vehicles) {
+            try {
+                v.printInfo();
+            } catch (Exception e) {
+                console.printLine("Ошибка при выводе транспорта: " + e.getMessage());
+            }
+        }
     }
 
     private void performActionOnVehicle() {
@@ -705,13 +849,23 @@ public class Main {
             Vehicle v = vehicles.get(i);
             console.printLine((i + 1) + ". " + v.getName() + " (" + v.getClass().getSimpleName() + ")");
         }
-        int idx = console.readInt("Введите номер: ") - 1;
+        int idx = console.readInt("Введите номер (0 — отмена): ") - 1;
+        if (idx == -1) {
+            console.printLine("Отменено.");
+            return;
+        }
         if (idx < 0 || idx >= vehicles.size()) {
             console.printLine("Неверный выбор.");
             return;
         }
         Vehicle v = vehicles.get(idx);
-        List<Action<? super Vehicle>> actions = v.getActions();
+        List<Action<? super Vehicle>> actions;
+        try {
+            actions = v.getActions();
+        } catch (Exception e) {
+            console.printLine("Ошибка при получении действий: " + e.getMessage());
+            return;
+        }
         if (actions.isEmpty()) {
             console.printLine("Доступных действий нет.");
             return;
@@ -720,12 +874,20 @@ public class Main {
         for (int i = 0; i < actions.size(); i++) {
             console.printLine((i + 1) + ". " + actions.get(i).getName());
         }
-        int actIdx = console.readInt("Выберите действие: ") - 1;
+        int actIdx = console.readInt("Выберите действие (0 — отмена): ") - 1;
+        if (actIdx == -1) {
+            console.printLine("Отменено.");
+            return;
+        }
         if (actIdx < 0 || actIdx >= actions.size()) {
             console.printLine("Неверный выбор действия.");
             return;
         }
         Action<? super Vehicle> action = actions.get(actIdx);
-        action.perform(v);
+        try {
+            action.perform(v);
+        } catch (Exception e) {
+            console.printLine("Ошибка при выполнении действия: " + e.getMessage());
+        }
     }
 }
